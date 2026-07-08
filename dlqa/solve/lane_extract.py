@@ -29,19 +29,9 @@ def synthesize(question, contexts, language) -> str:
 
 
 def solve_extract(question, retriever, language, top_k=10, source_filter=None) -> dict:
-    raw = retriever.search(question, k=max(top_k * 2, 20), source_filter=source_filter)
-    if not raw:
+    hits = retriever.search(question, k=top_k, source_filter=source_filter)
+    if not hits:
         return {"value": None, "evidences": []}
-    # diversify: keep up to 2 chunks per source so multi-file synthesis sees every file
-    by_src, hits = {}, []
-    for h in raw:
-        s = h["source_relative_path"]
-        if by_src.get(s, 0) < 2:
-            hits.append(h)
-            by_src[s] = by_src.get(s, 0) + 1
-        if len(hits) >= top_k:
-            break
-    hits = hits or raw[:top_k]
     ans = synthesize(question, hits, language)
     if not ans or ans.strip().upper().startswith(_SENTINEL):
         return {"value": None, "evidences": []}

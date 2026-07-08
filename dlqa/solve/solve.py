@@ -50,6 +50,9 @@ def solve(question, answer_type, manifest, retriever, asr=None):
     if lane == "compute":
         tabs = [_abs(f) for f in plan["files"] if Path(f).suffix.lower() in TAB_EXT][:4]
         res = solve_compute(question, tabs) if tabs else {"value": None, "evidences": []}
+        tr = res.get("transcripts") or []
+        if tr:
+            hits = [{"text": (str(tr[-1].get("code", "")) + "\n" + str(tr[-1].get("stdout", "")))[:900]}]
 
     elif lane == "perceive_count_folder":
         res = _perceive_count(question, plan["folder"])
@@ -87,10 +90,12 @@ def solve(question, answer_type, manifest, retriever, asr=None):
 
     value = res.get("value")
     evidences = res.get("evidences", [])
-    # Verify ONLY retrieval-based extract answers (grounded hits make the check reliable).
-    # Compute is guarded at the data level (code-gen returns null when data is absent), so we
-    # don't run the noisy post-hoc verifier on it. Vision/audio are grounded in their source.
-    if value is not None and lane == "extract" and not verify(question, value, evidences, hits, lane):
+    # Verify extract answers (grounded hits) and NON-unanimous compute answers (a divergent
+    # K-vote signals a shaky/false-premise computation, e.g. Q9). Trust unanimous computations
+    # (Q1/Q7/Q13 vote identically) so the noisy verifier can't nuke them.
+    run_verify = value is not None and (
+        lane == "extract" or (lane == "compute" and res.get("agreement", 1.0) < 1.0))
+    if run_verify and not verify(question, value, evidences, hits, lane):
         value, evidences = None, []
 
     answer = format_answer(question, value, answer_type)

@@ -157,7 +157,7 @@ def run_all(out="/kaggle/working/submission.csv", data_root=None, questions=None
             print(f"  Q{sid} error -> abstain ({type(e).__name__}: {e})")
             answer, evidences, lane = "Not enough data to answer.", [], "error"
         rows.append({"id": sid, "answer": answer, "evidences": json.dumps(evidences, ensure_ascii=False)})
-        print(f"  Q{sid} [{lane}] -> {str(answer)[:70]!r}")
+        print(f"  Q{sid} [{lane}] files={[str(x) for x in (plan.get('files') or [])][:3]} -> {str(answer)[:55]!r}")
         if gt_col is not None:
             report.append((sid, at, lane, scorer.score(q, answer, str(r[gt_col]), at), answer))
 
