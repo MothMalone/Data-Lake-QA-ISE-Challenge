@@ -1,0 +1,20 @@
+id,answer,evidences
+1,16,"[""biomedical/1-s2.0-S0092867420301070-mmc3.xlsx""]"
+2,"The provided data only lists protein sites found to be hyperactivated in CNV-high endometroid samples. It does not contain information about whether these proteins are targeted by FDA-approved drugs. Therefore, I can only provide the list of hyperactivated protein sites.
+
+The hyperactivated protein sites are: MCM3AP, SAR1B, RUNX1T1, CSK, LILRB4, WARS, CCDC88C, APOBEC3A, MVD, CDK7, LYSMD2, EIF3D, MARK3, AGPAT1, SOCS2, PFN1, UNC13D, CDK12, GRAMD2B, VPS26C, F12, CAPNS1, FAM114A2, MYL6, STOM, WRAP73, KHDRBS3, FEZ2, SYT17, SLC30A6, CHMP1B, IRAK1, H2AFX, TMA7, NDUFB8, TWISTNB, CD46, MGARP, MAN1A1, RPS15, SRSF8, SYNE2, COL6A1, PXMP4, PRKAG2, LIMCH1, S100A14, IDS, ANXA5, ZBTB21, PHKG2, IGF1, HMGCR, SMARCA4, QRSL1, MCTS1, ANP32B, TECR, STK36, SLC25A40, SLC25A4, CUL5, CCDC127, NIP7, DNAAF5, GLIPR1, TCHH, ARPC3, DERL1, TBC1D2B, TUBA4A, CDCA5, RABGAP1, CNOT1, HK2, FAM83G, CRTAP, POLB, CAVIN2, ELOF1, OLFM4, GDA, WDR74, PRR3, STAT5B, YKT6, TRMT10C, RASAL1, TMCO4, SRSF1, HSD17B7, FOSL2, BCAS3, RILPL2, MYO5A, PLEKHM1, SNCAIP, GALNT2, SSR4, CD58, GTF2IRD2, PARG, THBS1, RAB2B, PATJ, DPYSL4, VRK2, TADA2A, CRP, PNKD, RAB8A, DUSP14, HDDC3, ZNF131, WWC2, ADH1B, DSCC1, GTPBP3, ACOX1, WAC, CDH2, DDO, MAOB, ZNF480, IFT88, TRAF5, CTU1, PRR5L, POC5, GLYATL2, KIF23, KIF7, RHOF, RCSD1, ANKRD54, WAS, RTKN, NELFCD, OCLN, PTPN18, CHMP4A, TMEM109, PABPC1, RRAGC, STK32C, ABRAXAS2, NIFK, SLC25A29, SAMD9L.","[""biomedical/hyperactivated.csv""]"
+3,"诸葛亮在“隆中对”中为刘备提出了“三分天下之计”。他分析了曹操挟天子以令诸侯的现状，孙权占据江东的优势，以及荆州和益州作为战略要地的价值。他建议刘备先占据荆州和益州，等待时局变化，再从这两地进攻中原，最终实现统一。
+"", ""诸葛亮 - 维基百科，自由的百科全书.html""]}","[""诸葛亮 - 维基百科，自由的百科全书.html""]"
+4,-3,"[""number_image/2-cach-viet-chu-so-5.jpg"", ""number_image/2.png"", ""number_image/ChatGPT-Image-May-20-2026-05-32-09-PM.png"", ""number_image/Numbers-58d189073df78c3c4ff87ced.jpg"", ""number_image/a6f7e9fe82e7a7c2c10684a35da0c168.jpg""]"
+5,2,"[""number_image/2-cach-viet-chu-so-5.jpg"", ""number_image/2.png"", ""number_image/ChatGPT-Image-May-20-2026-05-32-09-PM.png"", ""number_image/Numbers-58d189073df78c3c4ff87ced.jpg"", ""number_image/a6f7e9fe82e7a7c2c10684a35da0c168.jpg""]"
+6,SHINNYO,"[""scholarship1.png""]"
+7,0.86,"[""da-dev-tables/Credit.csv""]"
+8,"Project 1 có nhiều thành viên hiện tại nhất, không tính số SV mới.
+final_answer(""1"", [""iSE-AXIOM-Internal Intro.pdf""])","[""ise.md"", ""iSE-AXIOM-Internal Intro.pdf""]"
+9,Not enough data to answer.,[]
+10,"The market-oriented socialist economy in Vietnam is an economic system that operates according to market laws while contributing to the gradual establishment of a society where the people are prosperous, the nation is strong, society is democratic, equitable, and civilized, with state regulation and led by the Communist Party of Vietnam. It is a unique model for the transitional period to socialism, bypassing the capitalist development stage, based on market principles and laws, and guided by the essence of socialism, aiming for a prosperous and civilized populace.","[""KTCT/2NewCh5KTTTrXHCNsửa.ppt""]"
+11,"The image ""definitely-100-percent-not-ise-members-image.png"" does not contain any information to confirm if the people in it are members of iSE. The filename itself suggests they are not. Therefore, I cannot show you images of iSE members from the provided files.","[""definitely-100-percent-not-ise-members-image.png""]"
+12,Not enough data to answer.,[]
+13,D,"[""class_grades.sql""]"
+14,4,"[""workshop_03.22.m4a""]"
+15,Not enough data to answer.,[]

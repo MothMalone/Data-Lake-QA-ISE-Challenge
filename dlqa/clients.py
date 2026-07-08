@@ -28,6 +28,16 @@ def chat(messages, role="synth", model=None, temperature=0.0, max_tokens=1500, *
     return (r.choices[0].message.content or "").strip()
 
 
+def chat_tools(messages, tools, model=None, role="agent", temperature=0.0, max_tokens=2000):
+    """One tool-calling turn. Returns the raw assistant message (has .content + .tool_calls)."""
+    m = model or config.MODELS.get(role, role)
+    r = _get().chat.completions.create(
+        model=m, messages=messages, tools=tools, tool_choice="auto",
+        temperature=temperature, max_tokens=max_tokens,
+    )
+    return r.choices[0].message
+
+
 def _img_data_url(path) -> str:
     import base64
     import mimetypes

@@ -26,10 +26,14 @@ def score_exact(pred, gold) -> float:
 
 def score_judge(question, pred, gold, role: str = "verify") -> float:
     from .. import clients
-    sys = ("You grade a QA answer. Given the QUESTION, a REFERENCE answer, and a CANDIDATE "
-           "answer, reply with ONE word: YES if the candidate conveys the same core idea as "
-           "the reference AND is written in the same language as the question; else NO.")
-    u = f"QUESTION: {question}\nREFERENCE: {gold}\nCANDIDATE: {pred}\nYES or NO?"
+    sys = ("You grade a candidate answer against a reference answer for a QA task. Reply with ONE "
+           "word: YES or NO.\n"
+           "Say YES if the candidate conveys the same core facts/meaning as the reference — minor "
+           "differences in wording, length, or extra detail are fine, as long as the key fact(s) "
+           "match — AND it is written in the same language as the question.\n"
+           "Say NO only if it contradicts the reference, misses or gets the key fact wrong, or is "
+           "in a different language than the question.")
+    u = f"QUESTION: {question}\n\nREFERENCE: {gold}\n\nCANDIDATE: {pred}\n\nSame core meaning and same language? YES or NO."
     try:
         out = clients.chat([{"role": "system", "content": sys}, {"role": "user", "content": u}],
                            role=role, max_tokens=3, temperature=0)

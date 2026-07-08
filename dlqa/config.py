@@ -40,6 +40,7 @@ OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/ap
 
 # role -> model. Defaults are the smoke-tested reachable cheap tier (2026-07).
 MODELS = {
+    "agent":    os.getenv("DLQA_AGENT_MODEL",    "google/gemini-2.5-flash"),
     "router":   os.getenv("DLQA_ROUTER_MODEL",   "deepseek/deepseek-v4-flash"),
     "coder":    os.getenv("DLQA_CODER_MODEL",    "deepseek/deepseek-v4-flash"),
     "synth":    os.getenv("DLQA_SYNTH_MODEL",    "deepseek/deepseek-v4-flash"),
