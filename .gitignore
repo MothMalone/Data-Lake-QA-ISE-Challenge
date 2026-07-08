@@ -1,0 +1,24 @@
+# data & large local files (attached as Kaggle datasets, not committed)
+data_lake/
+data_lake_partial_51_backup/
+*.zip
+0.Sample_Data.xlsx
+Untitled6_*.ipynb
+
+# secrets — NEVER commit
+.env
+.env.*
+
+# env & caches
+.venv/
+.dlqa/
+__pycache__/
+*.pyc
+*.egg-info/
+.claude/
+
+# generated / superseded notebooks & outputs
+submission.csv
+kaggle_run_full.ipynb
+kaggle_build_index.ipynb
+scratch_*.py

@@ -1,0 +1,26 @@
+[project]
+name = "dlqa"
+version = "0.1.0"
+description = "Organizer-aware data-lake QA solver (iSE challenge)"
+requires-python = ">=3.9"
+# Light deps only; the heavy ML stack (torch/sentence-transformers/qdrant/fastembed/
+# faster-whisper) is pip-installed by the Kaggle bootstrap to avoid version conflicts.
+dependencies = [
+    "pandas",
+    "openpyxl",
+    "rapidfuzz",
+    "rank_bm25",
+    "beautifulsoup4",
+    "lxml",
+    "pymupdf",
+    "python-docx",
+    "openai",
+    "tabulate",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["dlqa*"]
