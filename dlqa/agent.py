@@ -68,8 +68,22 @@ Method:
 Answer format:
 - exact_match: obey any explicit instruction in the question ("return only the name in uppercase without the country", "rounded to two decimal places", multiple-choice A/B/C/D → return just the letter). Return the bare value, nothing else.
 - llm_judge: give the concise factual answer/definition ITSELF, in the SAME LANGUAGE as the question, phrased as a reference answer key would (1-2 sentences, lead with the key fact). Do NOT narrate your process or describe what an image looks like — state the answer.
+- "show me / where is / find me X" questions: answer by NAMING the file that contains X (e.g. 'Ảnh ... nằm trong file "X".'). Do not refuse or second-guess whether the content truly matches — if a file clearly holds it, state that file.
 
 Be efficient (usually 3-8 tool calls) and always finish with final_answer."""
+
+
+def _extract_exact(question, answer):
+    """For exact_match: distil a verbose answer down to the bare value the question asks for."""
+    prompt = (f"QUESTION: {question}\n\nAn answer was given:\n{answer}\n\nExtract ONLY the exact final "
+              "value the question asks for, in the minimal form required — just the number, the single "
+              "letter, or the single name — obeying any format instruction in the question (uppercase, "
+              "'only the ordinal', etc.). Output only that value, nothing else.")
+    try:
+        return clients.chat([{"role": "user", "content": prompt}], role="synth",
+                            max_tokens=30, temperature=0).strip()
+    except Exception:
+        return answer
 
 
 def _manifest():
@@ -279,5 +293,8 @@ def solve_agent(question, answer_type, asr=None, retriever=None, model=None, tem
         return "Not enough data to answer.", []
     evidences = [_relpath(e) for e in evidences] or list(dict.fromkeys(t for t in touched if t))
     evidences = list(dict.fromkeys(evidences))[:5]
+    # exact_match must be a bare token — distil a verbose agent answer (e.g. "Project 5: ..." -> "5")
+    if answer_type == "exact_match" and len(final.split()) > 3 and "not enough data" not in final.lower():
+        final = _extract_exact(question, final)
     answer = format_answer(question, final, answer_type)
     return answer, evidences
