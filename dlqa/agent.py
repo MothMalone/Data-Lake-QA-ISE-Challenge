@@ -61,7 +61,11 @@ Method:
 1. list_files first. Reason about which file(s) truly match the question — by folder, filename, AND content. The lake contains DECOYS (similarly-named or same-topic files that are wrong); pick the file that genuinely answers the question, not a look-alike.
 2. Inspect: use search(query) to LOCATE relevant content across the lake (especially a passage inside a large document); read_file for text/tables (it gives you the absolute path for code); view_image for one image; count_matching_images for "how many images ..." questions; transcribe_audio for audio.
 3. If the question refers to SEVERAL items or documents (a comparison, or "the common point of X, Y and Z"), find and read ALL of them before answering — never answer from just one.
-4. For ANY numeric/tabular answer — counts, averages, correlations, max/min, or joins across files — WRITE CODE with run_python and compute it EXACTLY (don't round early). Never eyeball numbers. To count over a set of images/files, inspect EACH one and tally in code. A variable DATA_LAKE holds the lake root; join multiple files in one script when needed.
+4. For ANY numeric/tabular answer — counts, averages, correlations, max/min, or joins across files — WRITE CODE with run_python and compute it EXACTLY (don't round early). Never eyeball numbers. To count over a set of images/files, inspect EACH one and tally in code. A variable DATA_LAKE holds the lake root.
+   When a question has MULTIPLE conditions ("X that are A AND B", or reasoning across several files), DECOMPOSE first: list each condition, then identify exactly which file / column / sheet encodes it — READ each file's README/legend/metadata to map terms correctly (e.g. which column marks a sample as 'CNV-high' or 'endometrioid', which sheet lists FDA-drug targets). Then write ONE script that enforces EVERY condition and intersects them. Answer at the granularity the question asks — a gene/protein name, not a specific phospho-site, unless sites are explicitly requested.
+   To find which column encodes a condition in a wide table, use run_python to print df.columns.tolist() and df[col].value_counts() — do NOT trust a truncated preview. And note: to join two tables, FIND THE KEY by INSPECTING VALUES, not column names: print the actual values of ID-like columns (df['idx'].head(), df['id'].head()) — a column named 'idx'/'id'/'sample'/etc. often holds keys like 'S001','S002' that match another table's sample_id, even when the column NAMES differ. Merge on that column. Only if truly no column's values match AND the two tables have equal row counts, fall back to aligning by row position.
+   When filtering rows by a category/value named in the question, match CASE-INSENSITIVELY and tolerate spelling variants and typos — e.g. the question's 'endometroid' must match the data's 'Endometrioid', and 'CNV-high' matches 'CNV_HIGH'. Lowercase and use substring/contains, never exact string equality, or you will get zero rows. If a filter yields an empty result, inspect that column's actual distinct values and re-match.
+   If a file's NAME directly matches a key term in the question (e.g. a file called 'hyperactivated' for a question about hyperactivated items), that file almost certainly IS the intended data for that term — use it directly instead of recomputing the quantity from large raw matrices. Never load a very large file (>10 MB, e.g. a full proteomics matrix) in its entirety — you will time out; read only the specific small file/sheet/columns you actually need.
 5. Ground every claim in the files. If the lake genuinely lacks the data to answer, the answer is EXACTLY: Not enough data to answer. Never fall back on outside/world knowledge.
 6. final_answer(answer, evidences) — evidences = the relative filenames you actually used.
 
@@ -130,8 +134,11 @@ def _tool_read_file(path, sheet=None):
     if ext in {".xlsx", ".xls"} and sheet:
         import pandas as pd
         try:
-            df = pd.read_excel(p, sheet_name=sheet, header=None, nrows=80)
-            return f"absolute_path = {p}\nsheet '{sheet}' (header=None, first 80 rows):\n{df.to_string(max_rows=80)}"
+            df = pd.read_excel(p, sheet_name=sheet)
+            cols = [str(c) for c in df.columns]
+            return (f"absolute_path = {p}\nsheet '{sheet}': {len(df)} rows x {len(cols)} columns\n"
+                    f"ALL columns: {cols}\nhead(5):\n{df.head(5).to_string()}\n"
+                    "(if this sheet has NO header row, re-read in run_python with header=None)")
         except Exception as e:
             return f"could not read sheet '{sheet}' of {path}: {e}"
     if ext in TABLE_EXTS:
@@ -226,14 +233,14 @@ def _assistant_dict(msg):
     return d
 
 
-def solve_agent(question, answer_type, asr=None, retriever=None, model=None, temperature=0.0, max_steps=18, verbose=False):
+def solve_agent(question, answer_type, asr=None, retriever=None, model=None, temperature=0.0, max_steps=24, verbose=False):
     manifest = _manifest()
     messages = [
         {"role": "system", "content": _SYS},
         {"role": "user", "content": f"answer_type = {answer_type}\n\nFILES ({len(manifest)}):\n"
                                      + "\n".join(manifest) + f"\n\nQUESTION:\n{question}"},
     ]
-    final, evidences, touched, seen = None, [], [], set()
+    final, evidences, touched, seen, nudges = None, [], [], set(), 0
     for _ in range(max_steps):
         try:
             msg = clients.chat_tools(messages, TOOLS, model=model, role="agent")
@@ -244,8 +251,17 @@ def solve_agent(question, answer_type, asr=None, retriever=None, model=None, tem
         messages.append(_assistant_dict(msg))
         tcs = getattr(msg, "tool_calls", None)
         if not tcs:
-            final = (msg.content or "").strip()
-            break
+            # model narrated instead of acting — push it to carry out the plan, don't call it final
+            nudges += 1
+            if verbose:
+                print(f"   [nudge {nudges}] {(msg.content or '')[:80]!r}")
+            if nudges >= 3:
+                final = (msg.content or "").strip()
+                break
+            messages.append({"role": "user", "content":
+                "Do not stop to narrate a plan — CARRY IT OUT: call run_python (or another tool) to "
+                "actually compute over the files, then call final_answer with the concrete result."})
+            continue
         for tc in tcs:
             name = tc.function.name
             try:
