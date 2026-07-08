@@ -29,6 +29,11 @@ TOOLS = [
         "description": "Execute Python (pandas, numpy, sqlite3, math, json, re available). A variable DATA_LAKE holds the lake's absolute root path; build paths with os.path.join(DATA_LAKE, '<relative path>'). print() the result. Use this for ALL counting/averages/correlations/joins across files.",
         "parameters": {"type": "object", "properties": {"code": {"type": "string"}}, "required": ["code"]}}},
     {"type": "function", "function": {
+        "name": "run_sql",
+        "description": "Load a .sql dump into an in-memory SQLite DB and run a SQL query against it. Use this for .sql files instead of parsing the text yourself.",
+        "parameters": {"type": "object", "properties": {
+            "path": {"type": "string"}, "query": {"type": "string"}}, "required": ["path", "query"]}}},
+    {"type": "function", "function": {
         "name": "search",
         "description": "Semantic search over the lake's text content — returns the most relevant chunks with their source file. Use it to LOCATE where information lives (especially inside large documents, or across many files) before reading in full.",
         "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}},
@@ -59,13 +64,9 @@ _SYS = """You answer ONE question about a heterogeneous, multilingual (English/V
 
 Method:
 1. list_files first. Reason about which file(s) truly match the question — by folder, filename, AND content. The lake contains DECOYS (similarly-named or same-topic files that are wrong); pick the file that genuinely answers the question, not a look-alike.
-2. Inspect: use search(query) to LOCATE relevant content across the lake (especially a passage inside a large document); read_file for text/tables (it gives you the absolute path for code); view_image for one image; count_matching_images for "how many images ..." questions; transcribe_audio for audio.
+2. Inspect: use search(query) to LOCATE relevant content across the lake (especially a passage inside a large document); read_file for text/tables (it gives you the absolute path for code); view_image for one image; count_matching_images for "how many images ..." questions; run_sql(path, query) for a .sql file; transcribe_audio for audio.
 3. If the question refers to SEVERAL items or documents (a comparison, or "the common point of X, Y and Z"), find and read ALL of them before answering — never answer from just one.
-4. For ANY numeric/tabular answer — counts, averages, correlations, max/min, or joins across files — WRITE CODE with run_python and compute it EXACTLY (don't round early). Never eyeball numbers. To count over a set of images/files, inspect EACH one and tally in code. A variable DATA_LAKE holds the lake root.
-   When a question has MULTIPLE conditions ("X that are A AND B", or reasoning across several files), DECOMPOSE first: list each condition, then identify exactly which file / column / sheet encodes it — READ each file's README/legend/metadata to map terms correctly (e.g. which column marks a sample as 'CNV-high' or 'endometrioid', which sheet lists FDA-drug targets). Then write ONE script that enforces EVERY condition and intersects them. Answer at the granularity the question asks — a gene/protein name, not a specific phospho-site, unless sites are explicitly requested.
-   To find which column encodes a condition in a wide table, use run_python to print df.columns.tolist() and df[col].value_counts() — do NOT trust a truncated preview. And note: to join two tables, FIND THE KEY by INSPECTING VALUES, not column names: print the actual values of ID-like columns (df['idx'].head(), df['id'].head()) — a column named 'idx'/'id'/'sample'/etc. often holds keys like 'S001','S002' that match another table's sample_id, even when the column NAMES differ. Merge on that column. Only if truly no column's values match AND the two tables have equal row counts, fall back to aligning by row position.
-   When filtering rows by a category/value named in the question, match CASE-INSENSITIVELY and tolerate spelling variants and typos — e.g. the question's 'endometroid' must match the data's 'Endometrioid', and 'CNV-high' matches 'CNV_HIGH'. Lowercase and use substring/contains, never exact string equality, or you will get zero rows. If a filter yields an empty result, inspect that column's actual distinct values and re-match.
-   If a file's NAME directly matches a key term in the question (e.g. a file called 'hyperactivated' for a question about hyperactivated items), that file almost certainly IS the intended data for that term — use it directly instead of recomputing the quantity from large raw matrices. Never load a very large file (>10 MB, e.g. a full proteomics matrix) in its entirety — you will time out; read only the specific small file/sheet/columns you actually need.
+4. For ANY numeric/tabular answer — counts, averages, correlations, max/min, or joins across files — WRITE CODE with run_python and compute it EXACTLY (don't round early). Never eyeball numbers. A variable DATA_LAKE holds the lake root; join multiple files in one script when needed. For a join, find the key by checking a column's actual VALUES (an 'idx'/'id' column may hold the keys), and filter category values case-insensitively.
 5. Ground every claim in the files. If the lake genuinely lacks the data to answer, the answer is EXACTLY: Not enough data to answer. Never fall back on outside/world knowledge.
 6. final_answer(answer, evidences) — evidences = the relative filenames you actually used.
 
@@ -174,6 +175,22 @@ def _tool_view_image(path, question):
         return f"view_image failed: {e}"
 
 
+def _tool_run_sql(path, query):
+    import sqlite3
+    p = _resolve(path)
+    if not p:
+        return f"File not found: {path}"
+    try:
+        conn = sqlite3.connect(":memory:")
+        conn.executescript(p.read_text(errors="ignore"))
+        cur = conn.execute(query)
+        rows = cur.fetchall()
+        cols = [d[0] for d in cur.description] if cur.description else []
+        return f"columns: {cols}\nrows: {rows[:100]}"
+    except Exception as e:
+        return f"SQL error: {e}"
+
+
 def _tool_search(query, retriever):
     if retriever is None:
         return "(search unavailable here — use list_files/read_file instead)"
@@ -251,16 +268,18 @@ def solve_agent(question, answer_type, asr=None, retriever=None, model=None, tem
         messages.append(_assistant_dict(msg))
         tcs = getattr(msg, "tool_calls", None)
         if not tcs:
-            # model narrated instead of acting — push it to carry out the plan, don't call it final
+            content = (msg.content or "").strip()
+            # A SHORT text reply is the agent's direct answer — accept it. Only a LONG narrated plan
+            # (with no tool call) needs a one-time nudge to actually execute.
+            if len(content) < 200 or nudges >= 1:
+                final = content
+                break
             nudges += 1
             if verbose:
-                print(f"   [nudge {nudges}] {(msg.content or '')[:80]!r}")
-            if nudges >= 3:
-                final = (msg.content or "").strip()
-                break
+                print("   [nudge] long plan with no tool call -> push to execute")
             messages.append({"role": "user", "content":
-                "Do not stop to narrate a plan — CARRY IT OUT: call run_python (or another tool) to "
-                "actually compute over the files, then call final_answer with the concrete result."})
+                "Don't just describe a plan — CARRY IT OUT now: call run_python (or another tool) to "
+                "compute over the files, then call final_answer with the concrete result."})
             continue
         for tc in tcs:
             name = tc.function.name
@@ -284,6 +303,9 @@ def solve_agent(question, answer_type, asr=None, retriever=None, model=None, tem
                     touched.append(_relpath(args.get("path", "")))
             elif name == "run_python":
                 result = _tool_run_python(args.get("code", ""))
+            elif name == "run_sql":
+                result = _tool_run_sql(args.get("path", ""), args.get("query", ""))
+                touched.append(_relpath(args.get("path", "")))
             elif name == "search":
                 result = _tool_search(args.get("query", ""), retriever)
             elif name == "count_matching_images":

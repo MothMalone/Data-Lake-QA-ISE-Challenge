@@ -216,7 +216,7 @@ def run_all(out="/kaggle/working/submission.csv", data_root=None, questions=None
     os.environ["DLQA_DATA_LAKE_ROOT"] = data_root or find_data_root()
 
     from . import config
-    from .agent import solve_agent
+    from .ensemble import solve_ensemble
     from .eval import scorer
 
     print("DATA_LAKE_ROOT =", config.DATA_LAKE_ROOT)
@@ -240,7 +240,7 @@ def run_all(out="/kaggle/working/submission.csv", data_root=None, questions=None
         q = str(r[q_col])
         at = str(r[at_col]).strip() if at_col else "llm_judge"
         try:
-            answer, evidences = solve_agent(q, at, asr=asr, retriever=retriever)
+            answer, evidences = solve_ensemble(q, at, asr=asr, retriever=retriever)
         except Exception as e:
             print(f"  Q{sid} error -> abstain ({type(e).__name__}: {e})")
             answer, evidences = "Not enough data to answer.", []

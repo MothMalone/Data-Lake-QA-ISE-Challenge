@@ -10,7 +10,7 @@ import sys
 import pandas as pd
 
 from .. import config
-from ..agent import solve_agent
+from ..ensemble import solve_ensemble
 from ..retrieve import get_retriever
 from . import scorer
 
@@ -22,7 +22,7 @@ def main():
     for _, r in df.iterrows():
         sid, q, at, gt = int(r["STT"]), str(r["Question"]), str(r["Answer Type"]), str(r["Groundtruth"])
         try:
-            ans, ev = solve_agent(q, at, retriever=ret)
+            ans, ev = solve_ensemble(q, at, retriever=ret)
         except Exception as e:
             ans, ev = "Not enough data to answer.", []
             print(f"Q{sid} ERROR: {type(e).__name__}: {e}")

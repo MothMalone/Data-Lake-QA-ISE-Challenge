@@ -1,73 +1,47 @@
-"""SOTA orchestration: self-consistency over diverse tool-agent rollouts.
+"""Stabilization layer over the agent — kills output variance without adding exploration noise.
 
-Per question we run N independent agent rollouts (varied temperature / model), then
-aggregate answer-type-aware:
-  - exact_match -> normalized majority vote (kills variance like Q4's '-3', Q13's '7.5')
-  - llm_judge   -> an LLM selects the best-grounded candidate; abstain if the majority abstain
+  exact_match -> run N times at temp 0 and MAJORITY-VOTE the normalized answer (fixes glitches
+                 like an occasional empty count or a mis-rounded average).
+  llm_judge   -> single run + enforce the answer is in the question's language (a scoring rule).
 
-This is the proven self-consistency + best-of-N-with-judge recipe, which cost lets us run freely.
+Deliberately NOT the diverse-temperature ensemble (that injected errors); temp stays 0 so the
+votes agree except on genuine glitches, which the majority absorbs.
 """
-import re
 from collections import Counter
 
-from . import clients, config
+from . import clients
 from .agent import solve_agent
-from .solve.formatter import ABSTAIN, squad_normalize
+from .solve.formatter import squad_normalize
+from .solve.router import detect_language
+
+_LANG = {"vi": "Vietnamese", "zh": "Chinese", "en": "English"}
 
 
-def _rollout_configs(n):
-    base = config.MODELS["agent"]
-    pool = [(base, 0.0), (base, 0.5), (base, 0.7), (base, 0.3), (base, 0.6)]
-    return (pool * ((n // len(pool)) + 1))[:n]
-
-
-def _is_abstain(a):
-    return (not a) or squad_normalize(str(a)) == squad_normalize(ABSTAIN)
-
-
-def solve_ensemble(question, answer_type, asr=None, n=3, verbose=False):
-    cands = []
-    for model, temp in _rollout_configs(n):
-        try:
-            ans, ev = solve_agent(question, answer_type, asr=asr, model=model, temperature=temp)
-        except Exception as e:
-            if verbose:
-                print("   rollout error:", str(e)[:100])
-            ans, ev = ABSTAIN, []
-        cands.append({"answer": ans, "ev": ev})
-        if verbose:
-            print(f"   rollout(t={temp}) -> {str(ans)[:70]!r}")
-
-    if answer_type == "exact_match":
-        return _vote_exact(cands)
-    return _select_llm(question, cands)
-
-
-def _vote_exact(cands):
-    norms = [squad_normalize(c["answer"]) for c in cands]
-    win, _ = Counter(norms).most_common(1)[0]
-    for c, nz in zip(cands, norms):
-        if nz == win:
-            return c["answer"], c["ev"]
-    return cands[0]["answer"], cands[0]["ev"]
-
-
-def _select_llm(question, cands):
-    if sum(1 for c in cands if _is_abstain(c["answer"])) > len(cands) / 2:
-        return ABSTAIN, []
-    real = [c for c in cands if not _is_abstain(c["answer"])]
-    if not real:
-        return ABSTAIN, []
-    if len(real) == 1:
-        return real[0]["answer"], real[0]["ev"]
-    listing = "\n\n".join(f"[{i}] {c['answer']}" for i, c in enumerate(real))
-    prompt = (f"QUESTION:\n{question}\n\nCandidate answers:\n{listing}\n\n"
-              "Choose the SINGLE best candidate — most accurate and complete, grounded in the data, "
-              "and in the same language as the question. Reply with ONLY its index number.")
+def _enforce_language(question, answer):
+    if not answer or "not enough data" in answer.lower():
+        return answer
+    ql = detect_language(question)
+    if detect_language(answer) == ql:
+        return answer
     try:
-        out = clients.chat([{"role": "user", "content": prompt}], role="verify", max_tokens=5, temperature=0)
+        return clients.chat([{"role": "user", "content":
+            f"Rewrite this answer in {_LANG.get(ql, 'the question language')}, preserving the meaning "
+            f"and any proper nouns/numbers exactly, with no preamble:\n{answer}"}],
+            role="synth", temperature=0, max_tokens=400).strip()
     except Exception:
-        out = "0"
-    m = re.search(r"\d+", out or "")
-    idx = max(0, min(int(m.group()) if m else 0, len(real) - 1))
-    return real[idx]["answer"], real[idx]["ev"]
+        return answer
+
+
+def solve_ensemble(question, answer_type, asr=None, retriever=None, n=1):
+    if answer_type == "exact_match":
+        cands = [solve_agent(question, answer_type, asr=asr, retriever=retriever, temperature=0.0)
+                 for _ in range(n)]
+        norms = [squad_normalize(a) for a, _ in cands]
+        win, _ = Counter(norms).most_common(1)[0]
+        for (a, e), nz in zip(cands, norms):
+            if nz == win:
+                return a, e
+        return cands[0]
+
+    ans, ev = solve_agent(question, answer_type, asr=asr, retriever=retriever, temperature=0.0)
+    return _enforce_language(question, ans), ev
