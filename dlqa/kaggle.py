@@ -118,6 +118,7 @@ def build_agentic_retriever(ocr_images=True, device="cuda"):
     from . import config, ingest
 
     emb = SentenceTransformer("BAAI/bge-m3", device=device)
+    emb.max_seq_length = 512   # cap sequence length so a long chunk can't OOM the T4
     root = config.DATA_LAKE_ROOT
     records = []
     for p in sorted(root.rglob("*")):
@@ -130,17 +131,14 @@ def build_agentic_retriever(ocr_images=True, device="cuda"):
         elif ocr_images and ext in ingest.IMG_EXTS:
             blocks = [ingest._ocr_image(p)]
         for t in blocks:
-            sents = [s.strip() for s in re.split(r"(?<=[.!?。！？\n])\s+", t or "") if s.strip()]
-            if not sents:
-                continue
-            sembs = emb.encode(sents, normalize_embeddings=True)
-            for ch in _semantic_chunks(sents, sembs):
+            t = (t or "")[:200000]   # cap huge tables/docs so chunk count & memory stay bounded
+            for ch in ingest.chunks(t, size=1000, overlap=150):   # bounded recursive chunks
                 records.append({"source_relative_path": rel, "text": f"File: {rel}\n{ch}"})
-    print("semantic chunks:", len(records), "from",
+    print("chunks:", len(records), "from",
           len({r["source_relative_path"] for r in records}), "files")
 
     texts = [r["text"] for r in records]
-    dense = emb.encode(texts, batch_size=16, normalize_embeddings=True, show_progress_bar=True)
+    dense = emb.encode(texts, batch_size=8, normalize_embeddings=True, show_progress_bar=True)
     bm25 = SparseTextEmbedding(model_name="Qdrant/bm25")
     sparse = list(bm25.embed(texts))
     client = QdrantClient(location=":memory:")

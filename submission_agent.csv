@@ -1,16 +1,18 @@
 id,answer,evidences
-1,16,"[""biomedical/1-s2.0-S0092867420301070-mmc1.xlsx"", ""biomedical/1-s2.0-S0092867420301070-mmc2.xlsx"", ""biomedical/1-s2.0-S0092867420301070-mmc3.xlsx""]"
+1,16,"[""biomedical/1-s2.0-S0092867420301070-mmc1.xlsx"", ""biomedical/1-s2.0-S0092867420301070-mmc2.xlsx"", ""biomedical/1-s2.0-S0092867420301070-mmc3.xlsx"", ""biomedical/1-s2.0-S0092867420301070-mmc4.xlsx"", ""biomedical/1-s2.0-S0092867420301070-mmc5.xlsx""]"
 2,Not enough data to answer.,[]
-3,诸葛亮在“隆中对”中为刘备提出了“跨有荆益”的战略规划，即占据荆州和益州，以此作为根据地，进而图谋统一天下。这一战略在汉中之战后几乎成功，并最终帮助刘备建立了蜀汉政权。,"[""诸葛亮 - 维基百科，自由的百科全书.html"", ""刘备 - 维基百科，自由的百科全书.html""]"
+3,"诸葛亮在“隆中对”中为刘备提出了“三分天下之计”。他分析曹操挟天子以令诸侯，不可与之争锋；孙权据有江东，可以为援但不可图。他建议刘备先占据荆州和益州，等待时局变化，再从荆州、益州两路进兵中原，最终成就帝业。
+
+证据：诸葛亮 - 维基百科，自由的百科全书.html","[""诸葛亮 - 维基百科，自由的百科全书.html""]"
 4,8,"[""number_image""]"
-5,,"[""number_image""]"
-6,SHINNYO,"[""scholarship1.png""]"
+5,3,"[""number_image""]"
+6,SHINNYO,"[""all_scholarship.jpg"", ""scholarship1.png"", ""scholarship2.jpeg"", ""scholarship3.jpg""]"
 7,0.86,"[""da-dev-tables/Credit.csv""]"
 8,5,"[""iSE-AXIOM-Internal Intro.pdf""]"
-9,Not enough data to answer.,"[""archeology/roman_cities.csv"", ""da-dev-tables/city_departments_in_current_budget.csv""]"
-10,"The economy of Vietnam, under the framework of Political Economy, is a socialist-oriented market economy. This model operates fully and synchronously according to market economic laws, while ensuring a socialist orientation suitable for each stage of development. It is the general economic model for the transitional period to socialism in Vietnam.","[""KTCT/2NewCh5KTTTrXHCNsửa.ppt"", ""KTCT/GIAO-TRINH-KHONG-CHUYEN.pdf""]"
-11,Không có ảnh nào trong các tệp tin được cung cấp cho thấy các thành viên của nhóm iSE.,"[""definitely-100-percent-not-ise-members-image.png""]"
-12,"Điểm chung chính trong cách các dự án thư viện thông minh, làm sạch sông Minh Hoa và NovaCare tạo ra tác động bền vững là sự kết hợp giữa công nghệ/hệ thống thông tin với sự tham gia của cộng đồng/con người, cùng với việc liên tục điều chỉnh và cải thiện dựa trên phản hồi và dữ liệu thực tế.","[""01_smart_library_renovation.txt"", ""02_river_cleanup_community_project.txt"", ""04_ai_customer_support_startup.txt""]"
-13,D,"[""class_grades.sql""]"
-14,Not enough data to answer.,"[""workshop_03.22.m4a""]"
-15,Not enough data to answer.,"[""KTCT/GIAO-TRINH-KHONG-CHUYEN.pdf""]"
+9,Not enough data to answer.,"[""archeology/roman_cities.csv""]"
+10,"Nền kinh tế thị trường định hướng xã hội chủ nghĩa ở Việt Nam là nền kinh tế vận hành theo các quy luật của thị trường, đồng thời góp phần hướng tới từng bước xác lập một xã hội dân giàu, nước mạnh, dân chủ, công bằng, văn minh, có sự điều tiết của Nhà nước và do Đảng Cộng sản Việt Nam lãnh đạo. Đây là mô hình kinh tế đặc thù của thời kỳ quá độ lên chủ nghĩa xã hội, bỏ qua giai đoạn phát triển tư bản chủ nghĩa ở Việt Nam, dựa trên những nguyên tắc và quy luật của kinh tế thị trường, đồng thời dựa trên sự dẫn dắt và chi phối bởi các nguyên tắc và bản chất của chủ nghĩa xã hội.","[""KTCT/2NewCh5KTTTrXHCNsửa.ppt""]"
+11,"Hình ảnh ""definitely-100-percent-not-ise-members-image.png"" không xác nhận liệu nó có hiển thị các thành viên của nhóm iSE hay không.","[""definitely-100-percent-not-ise-members-image.png""]"
+12,Not enough data to answer.,[]
+13,C,"[""class_grades.sql""]"
+14,4,"[""workshop_03.22.m4a""]"
+15,Not enough data to answer.,[]
