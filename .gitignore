@@ -22,3 +22,7 @@ submission.csv
 kaggle_run_full.ipynb
 kaggle_build_index.ipynb
 scratch_*.py
+
+# kaggle build artifacts
+dlqa.zip
+kaggle_dataset/
