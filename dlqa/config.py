@@ -43,7 +43,7 @@ MODELS = {
     "router":   os.getenv("DLQA_ROUTER_MODEL",   "deepseek/deepseek-v4-flash"),
     "coder":    os.getenv("DLQA_CODER_MODEL",    "deepseek/deepseek-v4-flash"),
     "synth":    os.getenv("DLQA_SYNTH_MODEL",    "deepseek/deepseek-v4-flash"),
-    "verify":   os.getenv("DLQA_VERIFY_MODEL",   "deepseek/deepseek-v4-flash"),
+    "verify":   os.getenv("DLQA_VERIFY_MODEL",   "google/gemini-2.5-flash"),
     "vlm":      os.getenv("DLQA_VLM_MODEL",      "google/gemini-2.5-flash-lite"),
     "escalate": os.getenv("DLQA_ESCALATE_MODEL", "google/gemini-2.5-flash"),
 }

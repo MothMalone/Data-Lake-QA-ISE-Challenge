@@ -127,7 +127,7 @@ def run_all(out="/kaggle/working/submission.csv", data_root=None, questions=None
     from .eval import scorer
 
     print("DATA_LAKE_ROOT =", config.DATA_LAKE_ROOT)
-    records = ingest.build_corpus()
+    records = ingest.build_corpus(ocr_images=True)   # OCR images so Q6/Q15 become retrievable
     print("corpus:", len(records), "chunks from",
           len({r["source_relative_path"] for r in records}), "files")
     retriever = build_hybrid_retriever(records)

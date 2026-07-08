@@ -14,6 +14,8 @@ from . import config
 TEXT_EXTS = {".txt", ".md", ".sql", ".csv", ".tsv", ".xlsx", ".xls",
              ".pdf", ".docx", ".ppt", ".pptx", ".doc", ".html", ".htm"}
 
+IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tiff"}
+
 
 def _soffice():
     for c in ("soffice", "libreoffice",
@@ -90,14 +92,32 @@ def extract_units(path: Path):
     return recs
 
 
-def build_corpus(root=None):
+def _ocr_image(path: Path) -> str:
+    """VLM OCR so images are retrievable by content (scholarship poster, aviation scans)."""
+    from . import clients
+    try:
+        return clients.vlm(
+            "Transcribe ALL text visible in this image (OCR): headings, table cells, names, "
+            "numbers, labels, captions. Output only the transcribed text, no commentary.",
+            [path], temperature=0, max_tokens=800)
+    except Exception as e:
+        print(f"  [ocr] {path.name}: {e}")
+        return ""
+
+
+def build_corpus(root=None, ocr_images=False):
     root = Path(root or config.DATA_LAKE_ROOT)
     records = []
     for p in sorted(root.rglob("*")):
-        if not p.is_file() or p.suffix.lower() not in TEXT_EXTS:
+        if not p.is_file():
             continue
+        ext = p.suffix.lower()
         rel = str(p.relative_to(root))
-        for kind, text in extract_units(p):
-            for j, ch in enumerate(chunks(text)):
-                records.append({"source_relative_path": rel, "kind": kind, "chunk": j, "text": ch})
+        if ext in TEXT_EXTS:
+            for kind, text in extract_units(p):
+                for j, ch in enumerate(chunks(text)):
+                    records.append({"source_relative_path": rel, "kind": kind, "chunk": j, "text": ch})
+        elif ocr_images and ext in IMG_EXTS:
+            for j, ch in enumerate(chunks(_ocr_image(p))):
+                records.append({"source_relative_path": rel, "kind": "image_ocr", "chunk": j, "text": ch})
     return records

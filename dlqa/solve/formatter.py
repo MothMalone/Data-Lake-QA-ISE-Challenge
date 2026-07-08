@@ -87,6 +87,14 @@ def format_answer(question: str, value, answer_type: str = "exact_match") -> str
         if m:
             return f"{float(m.group(0)):.{nd}f}"
 
+    # count / "how many" questions -> extract the bare number from a possibly-verbose answer
+    if answer_type == "exact_match" and re.search(
+            r"how many|total number|number of|bao nhiêu|đếm|\bcount\b", q, re.I):
+        nums = _NUM.findall(str(value))
+        if nums:
+            n = float(nums[-1])
+            return str(int(n)) if n.is_integer() else nums[-1]
+
     s = str(value).strip()
     # uppercase directive (VI "chữ hoa" / EN "uppercase")
     if re.search(r"chữ hoa|in hoa|uppercase|viết hoa", q, re.I):
