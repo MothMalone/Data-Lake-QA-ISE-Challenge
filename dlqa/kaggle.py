@@ -9,6 +9,10 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+# reduce CUDA fragmentation before torch initializes (helps the bge-m3 build on a T4)
+os.environ.setdefault("PYTORCH_ALLOC_CONF", "expandable_segments:True")
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 
 def find_data_root() -> str:
     """Locate the data-lake root under /kaggle/input by a landmark file."""
@@ -132,13 +136,18 @@ def build_agentic_retriever(ocr_images=True, device="cuda"):
             blocks = [ingest._ocr_image(p)]
         for t in blocks:
             t = (t or "")[:200000]   # cap huge tables/docs so chunk count & memory stay bounded
-            for ch in ingest.chunks(t, size=1000, overlap=150):   # bounded recursive chunks
-                records.append({"source_relative_path": rel, "text": f"File: {rel}\n{ch}"})
+            for ch in ingest.chunks(t, size=500, overlap=80):   # small chunks -> bounded token length
+                records.append({"source_relative_path": rel, "text": f"File: {rel}\n{ch[:500]}"})
     print("chunks:", len(records), "from",
           len({r["source_relative_path"] for r in records}), "files")
 
     texts = [r["text"] for r in records]
-    dense = emb.encode(texts, batch_size=8, normalize_embeddings=True, show_progress_bar=True)
+    dense = emb.encode(texts, batch_size=4, normalize_embeddings=True, show_progress_bar=True)
+    try:
+        import torch
+        torch.cuda.empty_cache()
+    except Exception:
+        pass
     bm25 = SparseTextEmbedding(model_name="Qdrant/bm25")
     sparse = list(bm25.embed(texts))
     client = QdrantClient(location=":memory:")
@@ -218,8 +227,13 @@ def run_all(out="/kaggle/working/submission.csv", data_root=None, questions=None
     from .eval import scorer
 
     print("DATA_LAKE_ROOT =", config.DATA_LAKE_ROOT)
-    print("building semantic bge-m3 retriever (the agent's search tool) ...")
-    retriever = build_agentic_retriever(ocr_images=ocr_images)
+    print("building bge-m3 retriever (the agent's search tool) ...")
+    try:
+        retriever = build_agentic_retriever(ocr_images=ocr_images)
+    except Exception as e:
+        print(f"  retriever build FAILED ({type(e).__name__}: {e}). "
+              "Agent will run WITHOUT search — it reads files directly.")
+        retriever = None
     asr = make_asr() if use_asr else None
 
     qpath = questions or find_questions()
