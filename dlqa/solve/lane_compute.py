@@ -19,6 +19,9 @@ _SYS = (
     "a sheet actually has a header from the data and the README, and count list-style "
     "sheets with header=None so you do not lose the first row. Watch for traps: pick the "
     "exact sheet/column/table the question means (use the README to map terms to sheets). "
+    "CRITICAL: use ONLY the actual data in the file(s) — never answer from outside/world "
+    "knowledge. If the file(s) do not contain what the question needs (the required entity, "
+    "column, or attribute is absent), set value to null. "
     'Print ONLY a single-line JSON object to stdout: '
     '{"value": <the answer>, "unit": <string or null>, "explanation": <one short sentence>}. '
     "No prose, no extra prints, no plots. Do not use the network, subprocess, or write files."
